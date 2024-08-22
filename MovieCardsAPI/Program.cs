@@ -1,3 +1,5 @@
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MovieCardsAPI
 {
@@ -6,6 +8,8 @@ namespace MovieCardsAPI
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            builder.Services.AddDbContext<MovieCardsAPIContext>(options =>
+                options.UseSqlServer(builder.Configuration.GetConnectionString("MovieCardsAPIContext") ?? throw new InvalidOperationException("Connection string 'MovieCardsAPIContext' not found.")));
 
             // Add services to the container.
 

@@ -7,6 +7,8 @@
         public string Rating { get; set; }
         public DateTime ReleaseDate { get; set; }
         public string Description { get; set; }
+        public int DirectorId { get; set; }
+        public Director Director { get; set; }
 
     }
 }
