@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using MovieCardsAPI.Models.Dtos;
 using MovieCardsAPI.Models.Entities;
 
 namespace MovieCardsAPI.Controllers
@@ -22,9 +24,12 @@ namespace MovieCardsAPI.Controllers
 
         // GET: api/Movies
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Movie>>> GetMovie()
+        public async Task<ActionResult<IEnumerable<MovieDto>>> GetMovie()
         {
-            return await _context.Movie.ToListAsync();
+            //return await _context.Movie.ToListAsync();
+            var dto = _context.Movie.Select(m => new MovieDto(m.Id, m.Title, m.Rating, m.ReleaseDate, m.Description, m.DirectorId, m.Director.Name));
+
+            return Ok(await dto.ToListAsync());
         }
 
         // GET: api/Movies/5
@@ -75,12 +80,34 @@ namespace MovieCardsAPI.Controllers
         // POST: api/Movies
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Movie>> PostMovie(Movie movie)
+        public async Task<ActionResult<MovieDto>> PostMovie(CreateMovieDto dto)
         {
+            var genres = await _context.Genre.Where(g => dto.GenreIds.Contains(g.Id)).ToListAsync();
+            if (genres.Count != dto.GenreIds.Count())
+            {
+                return BadRequest("Invalid genre id(s).");
+            }
+            var director = await _context.Director.FindAsync(dto.DirectorId);
+            if (director == null)
+            {
+                director = new Director { Id = dto.DirectorId };
+            }
+
+            var movie = new Movie
+            {
+                Title = dto.Title,
+                Rating = dto.Rating,
+                ReleaseDate = dto.ReleaseDate,
+                Description = dto.Description,
+                DirectorId = dto.DirectorId,
+                Director = director,
+                Genres = genres,
+            };
             _context.Movie.Add(movie);
             await _context.SaveChangesAsync();
+            var movieDTO = new MovieDto(movie.Id, movie.Title, movie.Rating, movie.ReleaseDate, movie.Description, movie.DirectorId);
 
-            return CreatedAtAction("GetMovie", new { id = movie.Id }, movie);
+            return CreatedAtAction("GetMovie", new { id = movie.Id }, movieDTO);
         }
 
         // DELETE: api/Movies/5
