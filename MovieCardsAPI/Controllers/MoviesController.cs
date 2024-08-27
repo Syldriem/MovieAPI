@@ -27,34 +27,41 @@ namespace MovieCardsAPI.Controllers
         public async Task<ActionResult<IEnumerable<MovieDto>>> GetMovie()
         {
             //return await _context.Movie.ToListAsync();
-            var dto = _context.Movie.Select(m => new MovieDto(m.Id, m.Title, m.Rating, m.ReleaseDate, m.Description, m.DirectorId, m.Director.Name));
+            var dto = _context.Movie.Select(m => new MovieDto(m.Id, m.Title, m.Rating, m.ReleaseDate, m.Description, m.DirectorId));
 
             return Ok(await dto.ToListAsync());
         }
 
         // GET: api/Movies/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Movie>> GetMovie(int id)
+        public async Task<ActionResult<MovieDto>> GetMovie(int id)
         {
-            var movie = await _context.Movie.FindAsync(id);
+            var dto = await _context.Movie
+                            .Where(m => m.Id == id)
+                            .Select(m => new MovieDto(m.Id, m.Title, m.Rating, m.ReleaseDate, m.Description, m.DirectorId)).FirstOrDefaultAsync();
 
-            if (movie == null)
+            if (dto == null)
             {
                 return NotFound();
             }
 
-            return movie;
+            return Ok(dto);
         }
 
         // PUT: api/Movies/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutMovie(int id, Movie movie)
+        public async Task<IActionResult> PutMovie(int id, UpdateMovieDto dto)
         {
-            if (id != movie.Id)
+            if (id != dto.Id)
             {
                 return BadRequest();
             }
+
+            var movie = await _context.Movie.FindAsync(id);
+            movie.Title = dto.Title;
+            movie.Rating = dto.Rating;
+            movie.Description = dto.Description;
 
             _context.Entry(movie).State = EntityState.Modified;
 
@@ -107,7 +114,7 @@ namespace MovieCardsAPI.Controllers
             await _context.SaveChangesAsync();
             var movieDTO = new MovieDto(movie.Id, movie.Title, movie.Rating, movie.ReleaseDate, movie.Description, movie.DirectorId);
 
-            return CreatedAtAction("GetMovie", new { id = movie.Id }, movieDTO);
+            return CreatedAtAction(nameof(GetMovie), new { id = movie.Id }, movieDTO);
         }
 
         // DELETE: api/Movies/5
