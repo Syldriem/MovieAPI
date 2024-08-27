@@ -47,6 +47,30 @@ namespace MovieCardsAPI.Controllers
 
             return Ok(dto);
         }
+        [HttpPut("{id}/details")]
+        public async Task<ActionResult<MovieDetailsDto>> GetMovieDetails(int id)
+        {
+            var dto = await _context.Movie
+                .Include(m => m.Director)
+                .Include(m => m.Director.ContactInformation)
+                            .Where(m => m.Id == id)
+                            .Select(m => new MovieDetailsDto
+                            {
+                                Id = m.Id,
+                                Title = m.Title,
+                                DirectorName = m.Director.Name,
+                                ContactInformationEmail = m.Director.ContactInformation.Email,
+                                GenreIds = m.Genres.Select(g => g.Id).ToList(),
+                                ActorIds = m.Actors.Select(a => a.Id).ToList()
+                            }).FirstOrDefaultAsync();
+
+            if (dto == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(dto);
+        }
 
         // PUT: api/Movies/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
