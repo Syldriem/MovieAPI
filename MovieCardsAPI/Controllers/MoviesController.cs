@@ -47,7 +47,7 @@ namespace MovieCardsAPI.Controllers
 
             return Ok(dto);
         }
-        [HttpPut("{id}/details")]
+        [HttpGet("{id}/details")]
         public async Task<ActionResult<MovieDetailsDto>> GetMovieDetails(int id)
         {
             var dto = await _context.Movie
@@ -82,7 +82,11 @@ namespace MovieCardsAPI.Controllers
                 return BadRequest();
             }
 
-            var movie = await _context.Movie.FindAsync(id);
+            var movie = await _context.Movie.FirstOrDefaultAsync(m => m.Id == id);
+            if (movie == null)
+            {
+                return NotFound();
+            }
             movie.Title = dto.Title;
             movie.Rating = dto.Rating;
             movie.Description = dto.Description;
