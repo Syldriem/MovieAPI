@@ -1,11 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using MovieCardsAPI.Extensions;
 
 namespace MovieCardsAPI
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddDbContext<MovieCardsAPIContext>(options =>
@@ -25,6 +26,7 @@ namespace MovieCardsAPI
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
+                await app.SeedDataAsync();
             }
 
             app.UseHttpsRedirection();
