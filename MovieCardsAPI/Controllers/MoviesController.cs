@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using MovieCardsAPI.Models.Dtos;
 using MovieCardsAPI.Models.Entities;
+using MovieCardsAPI.ResourceParameters;
 
 namespace MovieCardsAPI.Controllers
 {
@@ -24,12 +26,38 @@ namespace MovieCardsAPI.Controllers
 
         // GET: api/Movies
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MovieDto>>> GetMovie()
+        public async Task<ActionResult<IEnumerable<MovieDto>>> GetMovie([FromQuery] AuthorsResourceParameters resourceParameters)
         {
             //return await _context.Movie.ToListAsync();
-            var dto = _context.Movie.Select(m => new MovieDto(m.Id, m.Title, m.Rating, m.ReleaseDate, m.Description, m.DirectorId));
+            if (resourceParameters == null)
+            {
+                throw new ArgumentNullException(nameof(resourceParameters));
+            }
+            if (string.IsNullOrWhiteSpace(resourceParameters.genre) && string.IsNullOrWhiteSpace(resourceParameters.searchQuery))
+            {
+                var dto = _context.Movie.Select(m => new MovieDto(m.Id, m.Title, m.Rating, m.ReleaseDate, m.Description, m.DirectorId));
+                return Ok(await dto.ToListAsync());
+            }
+            else
+            {
+                var query = _context.Movie.AsQueryable();
+                if (!string.IsNullOrWhiteSpace(resourceParameters.genre))
+                {
+                    resourceParameters.genre = resourceParameters.genre.Trim();
+                    query = query.Include(m => m.Genres).Where(m => m.Genres.Any(g => g.Name == resourceParameters.genre));
+                }
+                if (!string.IsNullOrWhiteSpace(resourceParameters.searchQuery))
+                {
+                    resourceParameters.searchQuery = resourceParameters.searchQuery.Trim();
+                    query = query.Where(m => m.Title.Contains(resourceParameters.searchQuery));
+                }
+                var dto = string.IsNullOrEmpty(resourceParameters.genre) ? query.Include(m => m.Genres.Where(g => g.Name == resourceParameters.genre)).Select(m => new MovieDto(m.Id, m.Title, m.Rating, m.ReleaseDate, m.Description, m.DirectorId))
+                    : query.Select(m => new MovieDto(m.Id, m.Title, m.Rating, m.ReleaseDate, m.Description, m.DirectorId));
+                return Ok(await dto.ToListAsync());
+            }
+            //var dto = _context.Movie.Select(m => new MovieDto(m.Id, m.Title, m.Rating, m.ReleaseDate, m.Description, m.DirectorId));
 
-            return Ok(await dto.ToListAsync());
+            //return Ok(await dto.ToListAsync());
         }
 
         // GET: api/Movies/5
